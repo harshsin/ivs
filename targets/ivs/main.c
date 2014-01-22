@@ -610,6 +610,7 @@ aim_main(int argc, char* argv[])
     router_ip_table_finish();
     arpa_finish();
     lldpa_system_finish();
+    icmpa_finish();
     ind_core_finish();
     ind_ovs_finish();
     ind_cxn_finish();
