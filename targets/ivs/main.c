@@ -46,6 +46,7 @@
 #include <arpa/arpa.h>
 #include <router_ip_table/router_ip_table.h>
 #include <pipeline/pipeline.h>
+#include <icmpa/icmpa.h>
 
 #define AIM_LOG_MODULE_NAME ivs
 #include <AIM/aim_log.h>
@@ -421,6 +422,11 @@ aim_main(int argc, char* argv[])
 
     if (router_ip_table_init() < 0) {
         AIM_LOG_FATAL("Failed to initialize Router IP table module");
+        return 1;
+    }
+
+    if (icmpa_init() < 0) {
+        AIM_LOG_FATAL("Failed to initialize ICMP Agent module");
         return 1;
     }
 
