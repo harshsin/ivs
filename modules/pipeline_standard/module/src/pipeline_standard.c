@@ -29,6 +29,7 @@
 #include <indigo/of_state_manager.h>
 #include <murmur/murmur.h>
 #include <packet_trace/packet_trace.h>
+#include <PPE/ppe.h>
 #include "cfr.h"
 #include "action.h"
 #include "group.h"
@@ -80,6 +81,7 @@ struct flowtable_entry {
 static void pipeline_standard_update_cfr(struct pipeline_standard_cfr *cfr, struct xbuf *actions);
 static void memor(void *_dst, const void *_src, int len);
 static void translate_cfr_mask(struct ind_ovs_parsed_key *mask, const struct pipeline_standard_cfr *cfr, const struct pipeline_standard_cfr *cfr_mask);
+static void process_pktin(uint8_t *data, unsigned int len, uint8_t reason, uint64_t metadata, struct ind_ovs_parsed_key *pkey);
 
 static int openflow_version = -1;
 static struct flowtable *flowtables[NUM_TABLES];
@@ -115,7 +117,7 @@ pipeline_standard_init(const char *name)
         pipeline_standard_group_register();
     }
 
-    ind_ovs_pktin_socket_register(&pktin_soc, NULL, PKTIN_INTERVAL,
+    ind_ovs_pktin_socket_register(&pktin_soc, process_pktin, PKTIN_INTERVAL,
                                   PKTIN_BURST_SIZE);
 }
 
@@ -136,6 +138,31 @@ pipeline_standard_finish(void)
     }
 
     ind_ovs_pktin_socket_unregister(&pktin_soc);
+}
+
+static void
+process_pktin(uint8_t *data, unsigned int len, uint8_t reason,
+              uint64_t metadata, struct ind_ovs_parsed_key *pkey)
+{
+    inband_pktin_handler_f handler = pipeline_inband_pktin_handler_get();
+    if (!handler) {
+        goto send_to_controller;
+    }
+
+    ppe_packet_t ppep;
+    ppe_packet_init(&ppep, data, len);
+    if (ppe_parse(&ppep) < 0) {
+        AIM_LOG_WARN("Packet-in parsing failed");
+        return;
+    }
+
+    if (ppe_header_get(&ppep, PPE_HEADER_LLDP)) {
+        handler(&ppep, pkey->in_port);
+    }
+
+send_to_controller:
+    ind_ovs_pktin(pkey->in_port, data, len, reason, metadata, pkey);
+    return;
 }
 
 indigo_error_t
