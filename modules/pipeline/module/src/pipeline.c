@@ -43,6 +43,8 @@ static struct pipeline *current_pipeline;
 
 static int queue_priority_inband = -1;
 
+static inband_pktin_handler_f inband_pktin_handler = NULL;
+
 void
 pipeline_register(const char *name, const struct pipeline_ops *ops)
 {
@@ -173,6 +175,28 @@ void
 pipeline_inband_queue_priority_set(int priority)
 {
     queue_priority_inband = priority;
+}
+
+void
+pipeline_inband_pktin_register(inband_pktin_handler_f fn)
+{
+    inband_pktin_handler = fn;
+}
+
+void
+pipeline_inband_pktin_unregister(inband_pktin_handler_f fn)
+{
+    if (inband_pktin_handler != fn) {
+        return;
+    }
+
+    inband_pktin_handler = NULL;
+}
+
+inband_pktin_handler_f
+pipeline_inband_pktin_handler_get()
+{
+    return inband_pktin_handler;
 }
 
 void

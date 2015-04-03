@@ -29,6 +29,8 @@
 #include <xbuf/xbuf.h>
 #include <action/action.h>
 #include <stats/stats.h>
+#include <indigo/of_state_manager.h>
+#include <PPE/ppe.h>
 
 struct ind_ovs_parsed_key;
 
@@ -112,5 +114,14 @@ pipeline_add_stats(struct xbuf *stats, struct stats_handle *stats_handle)
  * Set the queue priority for inband control packets.
  */
 void pipeline_inband_queue_priority_set(int priority);
+
+/*
+ * Registeration api's to receive inband control packets.
+ */
+typedef indigo_core_listener_result_t (*inband_pktin_handler_f)(ppe_packet_t *ppep,
+                                                                of_port_no_t in_port);
+void pipeline_inband_pktin_register(inband_pktin_handler_f fn);
+void pipeline_inband_pktin_unregister(inband_pktin_handler_f fn);
+inband_pktin_handler_f pipeline_inband_pktin_handler_get();
 
 #endif
